@@ -1,0 +1,29 @@
+{
+  "name": "global-adlink-backend",
+  "version": "1.0.0",
+  "description": "AI-powered ad network with fraud detection",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "db:init": "node db/init.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.0",
+    "ioredis": "^5.3.2",
+    "axios": "^1.4.0",
+    "bcrypt": "^5.1.0",
+    "jsonwebtoken": "^9.0.0",
+    "helmet": "^7.0.0",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^6.7.0",
+    "node-cron": "^3.0.2",
+    "ua-parser-js": "^1.0.35",
+    "dotenv": "^16.0.3",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
