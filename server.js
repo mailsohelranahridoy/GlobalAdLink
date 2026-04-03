@@ -11,6 +11,9 @@ const { authenticate } = require('./middleware/auth');
 
 const app = express();
 
+// CORS configuration
+const allowedOrigins = (process.env.FRONTEND_URLS || '').split(',').filter(Boolean);
+
 // Security middleware
 app.use(helmet({
     contentSecurityPolicy: {
@@ -25,8 +28,6 @@ app.use(helmet({
     },
 }));
 
-// CORS configuration
-const allowedOrigins = (process.env.FRONTEND_URLS || '').split(',').filter(Boolean);
 app.use(cors({
     origin: function (origin, callback) {
         if (!origin || allowedOrigins.includes(origin)) {
@@ -45,7 +46,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Rate limiting
+// Global rate limiting
 const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000,
     max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
@@ -71,7 +72,7 @@ app.use('/api/advertiser', authenticate(['advertiser']), require('./routes/adver
 app.use('/api/publisher', authenticate(['publisher']), require('./routes/publisher'));
 app.use('/api/payment', authenticate(), require('./routes/payment'));
 
-// Health check
+// Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
@@ -86,24 +87,35 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
+    // Initialize database (non-blocking - continues even if fails)
     try {
         await initDb();
-        console.log('✅ Database connected');
-        
-        await initRedis();
-        console.log('✅ Redis connected');
-        
-        scheduleCronJobs();
-        console.log('✅ Cron jobs scheduled');
-        
-        app.listen(PORT, () => {
-            console.log(`🚀 Server running on port ${PORT}`);
-            console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-        });
+        console.log('Database initialization attempted');
     } catch (err) {
-        console.error('❌ Failed to start server:', err);
-        process.exit(1);
+        console.error('Database init warning:', err.message);
     }
+    
+    // Initialize Redis (non-blocking)
+    try {
+        await initRedis();
+        console.log('Redis initialization attempted');
+    } catch (err) {
+        console.error('Redis init warning:', err.message);
+    }
+    
+    // Schedule cron jobs
+    try {
+        scheduleCronJobs();
+        console.log('Cron jobs scheduled');
+    } catch (err) {
+        console.error('Cron jobs warning:', err.message);
+    }
+    
+    // Start listening
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
 }
 
 startServer();
